@@ -190,35 +190,21 @@ app.post("/api/admin/upload", auth, upload.single("image"), (req,res)=>{
   res.json({url:`/uploads/${req.file.filename}`});
 });
 
-app.patch("/api/admin/products/:id", auth, (req,res)=>{
-  const {name,brand,category,price,old_price,stock,description,image,featured,active} = req.body || {};
-  db.prepare(`UPDATE products SET name=?,brand=?,category=?,price=?,old_price=?,stock=?,description=?,image=?,featured=?,active=? WHERE id=?`)
-    .run(name,brand||"",category,Number(price),old_price?Number(old_price):null,Number(stock||0),description||"",image||"",featured?1:0,active===false?0:1,Number(req.params.id));
-  res.json({ok:true});
-});
-
-app.delete("/api/admin/products/:id", auth, (req,res)=>{
-  db.prepare("UPDATE products SET active=0 WHERE id=?").run(Number(req.params.id));
-  res.json({ok:true});
-});
-
-app.get("/api/admin/orders", auth, (req,res)=>{
-  const orders = db.prepare("SELECT * FROM orders ORDER BY id DESC").all();
-  const items = db.prepare("SELECT * FROM order_items WHERE order_id=?");
-  res.json(orders.map(o=>({...o,items:items.all(o.id)})));
-});
-
 app.patch("/api/admin/orders/:id", auth, (req,res)=>{
   const allowed = ["New","Confirmed","Preparing","Out for Delivery","Delivered","Cancelled"];
-  if (!allowed.includes(req.body.status)) return res.status(400).json({error:"Invalid status."});
-  db.prepare("UPDATE orders SET status=? WHERE id=?").run(req.body.status,Number(req.params.id));
+  if (!allowed.includes(req.body.status)) {
+    return res.status(400).json({error:"Invalid status."});
+  }
+
+  db.prepare("UPDATE orders SET status=? WHERE id=?")
+    .run(req.body.status, Number(req.params.id));
+
   res.json({ok:true});
 });
 
+// Express 5 catch-all route
 app.get("/{*splat}", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-  res.sendFile(...);
 });
 
 app.listen(PORT,()=>console.log(`ALJODA Pharmacy running on port ${PORT}`));
