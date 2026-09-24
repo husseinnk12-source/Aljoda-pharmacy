@@ -8,10 +8,14 @@ const path = require(“path”);
 const fs = require(“fs”);
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || “CHANGE_THIS_SECRET_BEFORE_PRODUCTION”;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || “admin@aljoda-pharmacy.com”;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || “ChangeMe123!”;
+const JWT_SECRET =
+process.env.JWT_SECRET || “CHANGE_THIS_SECRET_BEFORE_PRODUCTION”;
+const ADMIN_EMAIL =
+process.env.ADMIN_EMAIL || “admin@aljoda-pharmacy.com”;
+const ADMIN_PASSWORD =
+process.env.ADMIN_PASSWORD || “ChangeMe123!”;
 
 const dataDir = path.join(__dirname, “data”);
 const uploadDir = path.join(__dirname, “public”, “uploads”);
@@ -20,6 +24,7 @@ fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const db = new Database(path.join(dataDir, “aljoda.db”));
+
 db.pragma(“journal_mode = WAL”);
 
 db.exec(`
@@ -153,29 +158,37 @@ null,
 ]
 ];
 
-const ins = db.prepare(INSERT INTO products (name,brand,category,price,old_price,stock,description,image,featured) VALUES (?,?,?,?,?,?,?,?,?));
+const insertProduct = db.prepare(INSERT INTO products ( name, brand, category, price, old_price, stock, description, image, featured ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?));
 
-const tx = db.transaction(rows => {
-rows.forEach(row => ins.run(…row));
+const seedProducts = db.transaction((rows) => {
+for (const row of rows) {
+insertProduct.run(…row);
+}
 });
 
-tx(seed);
+seedProducts(seed);
 }
 
 app.use(express.json({ limit: “2mb” }));
 app.use(cookieParser());
 
-app.use(express.static(path.join(__dirname, “public”)));
+app.use(
+express.static(path.join(__dirname, “public”))
+);
 
 const upload = multer({
 storage: multer.diskStorage({
 destination: uploadDir,
-filename: (_, file, cb) => {
-const ext = path.extname(file.originalname).toLowerCase();
 
+filename: (_, file, cb) => {
+  const ext = path
+    .extname(file.originalname)
+    .toLowerCase();
   cb(
     null,
-    `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`
+    `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}${ext}`
   );
 }
 
@@ -203,8 +216,13 @@ error: “Unauthorized”
 }
 
 try {
-req.admin = jwt.verify(token, JWT_SECRET);
+req.admin = jwt.verify(
+token,
+JWT_SECRET
+);
+
 next();
+
 } catch {
 res.status(401).json({
 error: “Unauthorized”
@@ -213,22 +231,32 @@ error: “Unauthorized”
 }
 
 app.get(”/api/products”, (req, res) => {
-const q = String(req.query.q || “”).trim().toLowerCase();
-const category = String(req.query.category || “”).trim();
+const q = String(
+req.query.q || “”
+)
+.trim()
+.toLowerCase();
+
+const category = String(
+req.query.category || “”
+).trim();
 
 let rows = db
 .prepare(
-“SELECT * FROM products WHERE active=1 ORDER BY featured DESC, id DESC”
+SELECT * FROM products WHERE active=1 ORDER BY featured DESC, id DESC
 )
 .all();
 
 if (category) {
-rows = rows.filter(p => p.category === category);
+rows = rows.filter(
+(product) =>
+product.category === category
+);
 }
 
 if (q) {
-rows = rows.filter(p =>
-${p.name} ${p.brand} ${p.category}
+rows = rows.filter((product) =>
+${product.name} ${product.brand} ${product.category}
 .toLowerCase()
 .includes(q)
 );
@@ -258,52 +286,68 @@ if (
 !items.length
 ) {
 return res.status(400).json({
-error: “Missing required order information.”
+error:
+“Missing required order information.”
 });
 }
 
 const ids = items
-.map(i => Number(i.product_id))
+.map((item) => Number(item.product_id))
 .filter(Boolean);
 
 const products = ids.length
 ? db
 .prepare(
-SELECT * FROM products WHERE id IN (${ids.map(() => "?").join(",")}) AND active=1
+SELECT * FROM products WHERE id IN (${ids .map(() => "?") .join(",")}) AND active=1
 )
 .all(…ids)
 : [];
 
-const map = new Map(products.map(p => [p.id, p]));
+const productMap = new Map(
+products.map((product) => [
+product.id,
+product
+])
+);
 
 let total = 0;
 const normalized = [];
 
 for (const item of items) {
-const p = map.get(Number(item.product_id));
-const qty = Math.max(1, Number(item.quantity || 1));
+const product = productMap.get(
+Number(item.product_id)
+);
 
-if (!p) {
+const quantity = Math.max(
+  1,
+  Number(item.quantity || 1)
+);
+if (!product) {
   return res.status(400).json({
-    error: "A product is unavailable."
+    error:
+      "A product is unavailable."
   });
 }
-if (p.stock < qty) {
+if (product.stock < quantity) {
   return res.status(400).json({
-    error: `Not enough stock for ${p.name}.`
+    error:
+      `Not enough stock for ${product.name}.`
   });
 }
-total += p.price * qty;
+total +=
+  product.price * quantity;
 normalized.push({
-  p,
-  qty
+  product,
+  quantity
 });
 
 }
 
-const create = db.transaction(() => {
+const createOrder = db.transaction(() => {
 const order = db
-.prepare(INSERT INTO orders (customer_name,phone,area,address,payment,notes,total) VALUES (?,?,?,?,?,?,?))
+.prepare(
+INSERT INTO orders ( customer_name, phone, area, address, payment, notes, total ) VALUES (?, ?, ?, ?, ?, ?, ?)
+)
 .run(
 customer_name,
 phone,
@@ -314,29 +358,49 @@ notes || “”,
 total
 );
 
-const addItem = db.prepare(`
+const addItem = db.prepare(
+  `
   INSERT INTO order_items
-  (order_id,product_id,product_name,price,quantity)
-  VALUES (?,?,?,?,?)
-`);
-const reduce = db.prepare(
-  "UPDATE products SET stock=stock-? WHERE id=?"
+  (
+    order_id,
+    product_id,
+    product_name,
+    price,
+    quantity
+  )
+  VALUES (?, ?, ?, ?, ?)
+  `
 );
-normalized.forEach(({ p, qty }) => {
+const reduceStock = db.prepare(
+  `
+  UPDATE products
+  SET stock=stock-?
+  WHERE id=?
+  `
+);
+for (const {
+  product,
+  quantity
+} of normalized) {
   addItem.run(
     order.lastInsertRowid,
-    p.id,
-    p.name,
-    p.price,
-    qty
+    product.id,
+    product.name,
+    product.price,
+    quantity
   );
-  reduce.run(qty, p.id);
-});
-return Number(order.lastInsertRowid);
+  reduceStock.run(
+    quantity,
+    product.id
+  );
+}
+return Number(
+  order.lastInsertRowid
+);
 
 });
 
-const orderId = create();
+const orderId = createOrder();
 
 res.status(201).json({
 ok: true,
@@ -345,75 +409,104 @@ total
 });
 });
 
-app.post(”/api/admin/login”, (req, res) => {
-const { email, password } = req.body || {};
+app.post(
+“/api/admin/login”,
+(req, res) => {
+const {
+email,
+password
+} = req.body || {};
 
 const admin = db
-.prepare(“SELECT * FROM admins WHERE email=?”)
-.get(email);
-
+  .prepare(
+    "SELECT * FROM admins WHERE email=?"
+  )
+  .get(email);
 if (
-!admin ||
-!bcrypt.compareSync(
-password || “”,
-admin.password_hash
-)
+  !admin ||
+  !bcrypt.compareSync(
+    password || "",
+    admin.password_hash
+  )
 ) {
-return res.status(401).json({
-error: “Invalid email or password.”
-});
+  return res.status(401).json({
+    error:
+      "Invalid email or password."
+  });
 }
-
 const token = jwt.sign(
-{
-id: admin.id,
-email: admin.email
-},
-JWT_SECRET,
-{
-expiresIn: “7d”
-}
+  {
+    id: admin.id,
+    email: admin.email
+  },
+  JWT_SECRET,
+  {
+    expiresIn: "7d"
+  }
 );
-
 res.cookie(
-“aljoda_admin”,
-token,
-{
-httpOnly: true,
-sameSite: “lax”,
-secure: process.env.NODE_ENV === “production”,
-maxAge: 7 * 24 * 60 * 60 * 1000
+  "aljoda_admin",
+  token,
+  {
+    httpOnly: true,
+    sameSite: "lax",
+    secure:
+      process.env.NODE_ENV ===
+      "production",
+    maxAge:
+      7 * 24 * 60 * 60 * 1000
+  }
+);
+res.json({
+  ok: true
+});
+
 }
 );
 
+app.post(
+“/api/admin/logout”,
+auth,
+(req, res) => {
+res.clearCookie(
+“aljoda_admin”
+);
+
 res.json({
-ok: true
-});
-});
-
-app.post(”/api/admin/logout”, auth, (req, res) => {
-res.clearCookie(“aljoda_admin”);
-
-res.json({
-ok: true
-});
+  ok: true
 });
 
-app.get(”/api/admin/me”, auth, (req, res) => {
+}
+);
+
+app.get(
+“/api/admin/me”,
+auth,
+(req, res) => {
 res.json({
 email: req.admin.email
 });
-});
+}
+);
 
-app.get(”/api/admin/products”, auth, (req, res) => {
+app.get(
+“/api/admin/products”,
+auth,
+(req, res) => {
 res.json(
 db
-.prepare(“SELECT * FROM products ORDER BY id DESC”)
+.prepare(
+“SELECT * FROM products ORDER BY id DESC”
+)
 .all()
 );
-});
+}
+);
 
-app.post(”/api/admin/products”, auth, (req, res) => {
+app.post(
+“/api/admin/products”,
+auth,
+(req, res) => {
 const {
 name,
 brand,
@@ -427,33 +520,56 @@ featured
 } = req.body || {};
 
 if (
-!name ||
-!category ||
-!Number.isFinite(Number(price))
+  !name ||
+  !category ||
+  !Number.isFinite(
+    Number(price)
+  )
 ) {
-return res.status(400).json({
-error: “Name, category and price are required.”
-});
+  return res.status(400).json({
+    error:
+      "Name, category and price are required."
+  });
 }
-
-const r = db
-.prepare(INSERT INTO products (name,brand,category,price,old_price,stock,description,image,featured) VALUES (?,?,?,?,?,?,?,?,?))
-.run(
-name,
-brand || “”,
-category,
-Number(price),
-old_price ? Number(old_price) : null,
-Number(stock || 0),
-description || “”,
-image || “”,
-featured ? 1 : 0
-);
-
+const result = db
+  .prepare(
+    `
+    INSERT INTO products
+    (
+      name,
+      brand,
+      category,
+      price,
+      old_price,
+      stock,
+      description,
+      image,
+      featured
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+  )
+  .run(
+    name,
+    brand || "",
+    category,
+    Number(price),
+    old_price
+      ? Number(old_price)
+      : null,
+    Number(stock || 0),
+    description || "",
+    image || "",
+    featured ? 1 : 0
+  );
 res.status(201).json({
-id: Number(r.lastInsertRowid)
+  id: Number(
+    result.lastInsertRowid
+  )
 });
-});
+
+}
+);
 
 app.post(
 “/api/admin/upload”,
@@ -462,18 +578,23 @@ upload.single(“image”),
 (req, res) => {
 if (!req.file) {
 return res.status(400).json({
-error: “Please upload a JPG, PNG or WebP image.”
+error:
+“Please upload a JPG, PNG or WebP image.”
 });
 }
 
 res.json({
-  url: `/uploads/${req.file.filename}`
+  url:
+    `/uploads/${req.file.filename}`
 });
 
 }
 );
 
-app.patch(”/api/admin/products/:id”, auth, (req, res) => {
+app.patch(
+“/api/admin/products/:id”,
+auth,
+(req, res) => {
 const {
 name,
 brand,
@@ -487,53 +608,88 @@ featured,
 active
 } = req.body || {};
 
-db.prepare(UPDATE products SET name=?, brand=?, category=?, price=?, old_price=?, stock=?, description=?, image=?, featured=?, active=? WHERE id=?).run(
-name,
-brand || “”,
-category,
-Number(price),
-old_price ? Number(old_price) : null,
-Number(stock || 0),
-description || “”,
-image || “”,
-featured ? 1 : 0,
-active === false ? 0 : 1,
+db.prepare(
+  `
+  UPDATE products
+  SET
+    name=?,
+    brand=?,
+    category=?,
+    price=?,
+    old_price=?,
+    stock=?,
+    description=?,
+    image=?,
+    featured=?,
+    active=?
+  WHERE id=?
+  `
+).run(
+  name,
+  brand || "",
+  category,
+  Number(price),
+  old_price
+    ? Number(old_price)
+    : null,
+  Number(stock || 0),
+  description || "",
+  image || "",
+  featured ? 1 : 0,
+  active === false ? 0 : 1,
+  Number(req.params.id)
+);
+res.json({
+  ok: true
+});
+
+}
+);
+
+app.delete(
+“/api/admin/products/:id”,
+auth,
+(req, res) => {
+db.prepare(
+“UPDATE products SET active=0 WHERE id=?”
+).run(
 Number(req.params.id)
 );
 
 res.json({
-ok: true
-});
-});
-
-app.delete(”/api/admin/products/:id”, auth, (req, res) => {
-db.prepare(
-“UPDATE products SET active=0 WHERE id=?”
-).run(Number(req.params.id));
-
-res.json({
-ok: true
-});
+  ok: true
 });
 
-app.get(”/api/admin/orders”, auth, (req, res) => {
+}
+);
+
+app.get(
+“/api/admin/orders”,
+auth,
+(req, res) => {
 const orders = db
-.prepare(“SELECT * FROM orders ORDER BY id DESC”)
+.prepare(
+“SELECT * FROM orders ORDER BY id DESC”
+)
 .all();
 
 const items = db.prepare(
-“SELECT * FROM order_items WHERE order_id=?”
+  "SELECT * FROM order_items WHERE order_id=?"
 );
-
 res.json(
-orders.map(o => ({
-…o,
-items: items.all(o.id)
-}))
+  orders.map((order) => ({
+    ...order,
+    items: items.all(order.id)
+  }))
 );
-});
 
-app.patch(”/api/admin/orders/:id”, auth, (req, res) => {
+}
+);
+
+app.patch(
+“/api/admin/orders/:id”,
+auth,
+(req, res) => {
 const allowed = [
 “New”,
 “Confirmed”,
@@ -543,36 +699,49 @@ const allowed = [
 “Cancelled”
 ];
 
-if (!allowed.includes(req.body.status)) {
-return res.status(400).json({
-error: “Invalid status.”
-});
+if (
+  !allowed.includes(
+    req.body.status
+  )
+) {
+  return res.status(400).json({
+    error:
+      "Invalid status."
+  });
 }
-
 db.prepare(
-“UPDATE orders SET status=? WHERE id=?”
+  "UPDATE orders SET status=? WHERE id=?"
 ).run(
-req.body.status,
-Number(req.params.id)
+  req.body.status,
+  Number(req.params.id)
 );
-
 res.json({
-ok: true
+  ok: true
 });
-});
+
+}
+);
 
 /*
-Homepage
-Express 5 compatible.
-*/
-app.get(”/”, (req, res) => {
-res.sendFile(
-path.join(__dirname, “public”, “index.html”)
-);
-});
 
-app.listen(PORT, () => {
+* Homepage
+* Express 5 compatible.
+    */
+    app.get(”/”, (req, res) => {
+    res.sendFile(
+    path.join(
+    __dirname,
+    “public”,
+    “index.html”
+    )
+    );
+    });
+
+app.listen(
+PORT,
+() => {
 console.log(
 ALJODA Pharmacy running on port ${PORT}
 );
-});
+}
+);
