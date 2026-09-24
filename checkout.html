@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checkout | ALJODA</title><link rel="stylesheet" href="/styles.css"></head><body>
+<header class="navbar"><div></div><a class="brand" href="/"><img src="/assets/logo.jpeg"></a><div></div></header>
+<main class="section"><h2>Complete Your Order</h2><p>Enter your delivery details.</p><form id="f" class="modal-card" style="width:100%;max-width:760px;margin-top:25px">
+<input required name="customer_name" placeholder="Full name"><input required name="phone" placeholder="Phone number"><input required name="area" placeholder="Governorate / Area"><textarea required name="address" placeholder="Full address"></textarea>
+<select name="payment"><option>Cash on Delivery</option><option>Online Payment (to be connected)</option></select><textarea name="notes" placeholder="Notes (optional)"></textarea><button class="checkout">Place Order</button></form></main>
+<script>
+const cart=JSON.parse(localStorage.getItem("aljoda_cart")||"[]");
+document.getElementById("f").onsubmit=async e=>{e.preventDefault();if(!cart.length)return alert("Your cart is empty.");const body=Object.fromEntries(new FormData(e.target));body.items=cart;const r=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)return alert(d.error||"Order failed");localStorage.removeItem("aljoda_cart");alert("Order #"+d.order_id+" received successfully!");location.href="/";};
+</script></body></html>

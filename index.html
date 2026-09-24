@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALJODA Pharmacy | Medicine & Skincare</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+<div class="topbar"><span>🚚 Free delivery for orders over 50,000 IQD</span><span>Need help? +964 770 123 4567</span></div>
+<header class="navbar"><button class="menu-btn" onclick="toggleNav()">☰</button>
+<nav id="nav"><a class="active" href="#home">Home</a><a href="#products">Products</a><a href="#categories">Categories</a><a href="#offers">Offers</a><a href="#about">About Us</a><a href="#contact">Contact</a></nav>
+<a class="brand" href="#home"><img src="/assets/logo.jpeg" alt="ALJODA"></a>
+<div class="nav-actions"><button onclick="focusSearch()">⌕</button><a href="/admin.html">♙</a><button onclick="openCart()">🛒 <b id="cartCount">0</b></button></div></header>
+<main id="home">
+<section class="hero"><div class="hero-content"><p class="eyebrow">YOUR HEALTH & BEAUTY</p><h1>Our Priority</h1><p class="hero-sub">Quality medicines <span>•</span> Trusted care <span>•</span> Better tomorrow</p>
+<div class="search-box"><span>⌕</span><input id="search" placeholder="Search for medicine, skincare or brand..." oninput="loadProducts()"><button onclick="loadProducts()">Search</button></div>
+<div class="trust-mini"><span>🛡 Authentic Products</span><span>🏷 Best Prices</span><span>🚚 Fast Delivery</span></div></div>
+<div class="hero-image"><div class="bag">الجودة<br><small>ALJODA</small><br><em>Pharmacy</em></div></div></section>
+<section class="section" id="categories"><div class="section-head"><div><h2>Shop by Category</h2><p>Find everything you need in one place</p></div></div>
+<div class="category-grid">
+<button onclick="loadProducts('Medicines')"><span>💊</span><b>Medicines</b><small>→</small></button><button onclick="loadProducts('Skincare & Beauty')"><span>🧴</span><b>Skincare & Beauty</b><small>→</small></button>
+<button onclick="loadProducts('Vitamins & Supplements')"><span>💊</span><b>Vitamins & Supplements</b><small>→</small></button><button onclick="loadProducts('Baby Care')"><span>🧸</span><b>Baby Care</b><small>→</small></button>
+<button onclick="loadProducts('Medical Devices')"><span>🩺</span><b>Medical Devices</b><small>→</small></button><button onclick="loadProducts('Personal Care')"><span>🪥</span><b>Personal Care</b><small>→</small></button></div></section>
+<section class="promo-grid" id="offers"><article><div><h3>Skin Care</h3><p>Healthy skin, lasting confidence</p><button onclick="loadProducts('Skincare & Beauty')">Shop Now →</button></div></article>
+<article><div><h3>Vitamins & Supplements</h3><p>More energy, better life</p><button onclick="loadProducts('Vitamins & Supplements')">Shop Now →</button></div></article>
+<article><div><h3>Fast & Safe Delivery</h3><p>To your door</p><button onclick="document.getElementById('contact').scrollIntoView()">Contact →</button></div></article></section>
+<section class="section" id="products"><div class="section-head"><div><h2>Products</h2><p>Order your products online</p></div><button class="text-btn" onclick="loadProducts()">View All →</button></div><div id="productGrid" class="product-grid"></div></section>
+<section class="benefits"><div><strong>🛡</strong><b>100% Original Products</b><small>We guarantee authentic products</small></div><div><strong>🚚</strong><b>Fast & Reliable Delivery</b><small>Across all Iraq</small></div><div><strong>🎧</strong><b>Customer Support</b><small>We're here to help</small></div><div><strong>🔒</strong><b>Secure Checkout</b><small>Your order details are protected</small></div></section>
+</main>
+<footer id="contact"><div class="footer-brand"><img src="/assets/logo.jpeg"></div><div><h4>Quick Links</h4><a href="#home">Home</a><a href="#products">Products</a><a href="#offers">Offers</a></div><div><h4>Contact Us</h4><p>☎ +964 770 123 4567</p><p>✉ info@aljoda-pharmacy.com</p><p>⌖ Baghdad, Iraq</p></div><div><h4>Subscribe</h4><p>Get the latest offers and updates</p><div class="subscribe"><input placeholder="Your email address"><button>Subscribe</button></div></div><div class="copyright">© 2026 ALJODA Pharmacy. All rights reserved.</div></footer>
+<div id="cartModal" class="modal"><div class="modal-card"><button class="close" onclick="closeCart()">×</button><h2>Your Cart</h2><div id="cartItems"></div><div class="cart-total"><span>Total</span><strong id="cartTotal">0 IQD</strong></div><button class="checkout" onclick="goCheckout()">Continue to Checkout</button></div></div>
+<script src="/app.js"></script></body></html>
