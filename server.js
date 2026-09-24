@@ -215,7 +215,7 @@ app.patch("/api/admin/orders/:id", auth, (req,res)=>{
   res.json({ok:true});
 });
 
-app.get('/{*splat}', (req, res) => {
+app.get("/{*splat}", (req,res) => res.sendFile(path.join(__dirname,"public","index.html")));
   res.sendFile(...);
 });
 
